@@ -1,0 +1,19 @@
+SELECT
+    DATE(TIMESTAMP_MICROS(event_timestamp)) AS event_date,
+    traffic_source.source AS source,
+    traffic_source.medium AS medium,
+    traffic_source.name AS campaign,
+    count(distinct CONCAT(user_pseudo_id,(SELECT value.int_value FROM UNNEST(event_params) WHERE key = 'ga_session_id'))) AS user_sessions_count,
+    case when countif(event_name = 'session_start') = 0 then null
+  else round (countif (event_name = 'add_to_cart') / countif(event_name = 'session_start'), 6) end as visit_to_cart,
+  case when countif(event_name = 'session_start') = 0 then null
+  else round (countif (event_name = 'begin_checkout') / countif(event_name = 'session_start'), 6) end as visit_to_checkout,
+  case when countif(event_name = 'session_start') = 0 then null
+  else round (countif (event_name = 'purchase') / countif(event_name = 'session_start'), 6) end as visit_to_purchase
+FROM `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`
+GROUP BY
+    event_date,
+    source,
+    medium,
+    campaign
+  LIMIT 1000; 
